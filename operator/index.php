@@ -198,30 +198,198 @@ include __DIR__ . '/../includes/header.php';
 ?>
 
 <style>
-/* Full Single-Screen POS Layout - No Vertical Scroll */
-body {
-    overflow-y: hidden;
+/* Responsive Single-Screen POS Layout */
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
 }
 
+.main-content,
+.content-wrapper,
+.page-content,
+.container,
+.container-fluid,
+main {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-bottom: 8px !important;
+}
+
+/* FULL SCREEN MODE (Works for both Toggle Button & Browser Fullscreen API) */
+body.pos-fullscreen-mode,
+:fullscreen body,
+:-webkit-full-screen body {
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+}
+
+body.pos-fullscreen-mode #checkoutForm,
+:fullscreen #checkoutForm,
+:-webkit-full-screen #checkoutForm {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 8px !important;
+    background: #f1f5f9 !important;
+    z-index: 99999 !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+}
+
+body.pos-fullscreen-mode .pos-layout-grid,
+:fullscreen .pos-layout-grid,
+:-webkit-full-screen .pos-layout-grid {
+    flex: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    grid-template-columns: minmax(380px, 34%) 1fr !important;
+}
+
+/* 2-Column Responsive POS Grid */
 .pos-layout-grid {
     display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: 12px;
+    grid-template-columns: minmax(380px, 36%) 1fr;
+    gap: 10px;
     align-items: stretch;
-    height: calc(100vh - 85px);
+    height: calc(100vh - 76px);
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.pos-left-column {
+/* LEFT COLUMN: BILL + CHECKOUT STACKED */
+.pos-left-bill-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    height: 100%;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
     overflow: hidden;
+    height: 100%;
+    min-width: 0;
+}
+
+.pos-bill-header {
+    padding: 8px 10px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.pos-cart-table-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 120px;
+}
+
+.pos-cart-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pos-cart-table th {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.pos-cart-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+/* BOTTOM OF LEFT COLUMN: COMPACT CHECKOUT SUMMARY */
+.pos-checkout-bottom {
+    background: #f8fafc;
+    border-top: 2px solid #e2e8f0;
+    padding: 9px 10px;
+    flex-shrink: 0;
+}
+
+.checkout-customer-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 7px;
+}
+
+.checkout-summary-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    padding: 7px 10px;
+    margin-bottom: 7px;
+}
+
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.net-payable-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0d9488;
+    color: #ffffff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-top: 4px;
+}
+
+.checkout-payment-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 7px;
+}
+
+.checkout-action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* RIGHT COLUMN: SEARCH + CATEGORIES + PRODUCT IMAGE GRID */
+.pos-catalog-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px;
 }
 
 .search-dropdown-wrapper {
     position: relative;
-    width: 100%;
+    flex: 1;
 }
 
 .search-results-dropdown {
@@ -253,113 +421,177 @@ body {
     background: #f0fdf4;
 }
 
-.pos-cart-panel {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    overflow: hidden;
+/* Category Tabs Bar */
+.pos-categories-bar {
     display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 470px;
-}
-
-.pos-cart-table-wrapper {
-    flex: 1;
-    overflow-y: auto;
-}
-
-.pos-cart-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.pos-cart-table th {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 7px;
     background: #f8fafc;
-    color: #475569;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border-color);
-    text-align: left;
-    position: sticky;
-    top: 0;
-    z-index: 2;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    max-height: 92px;
+    overflow-y: auto;
+    flex-shrink: 0;
 }
 
-.pos-cart-table td {
-    padding: 6px 12px;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
-}
-
-.pos-catalog-panel {
+.category-chip {
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
     background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 10px 12px;
-    height: 210px;
-    display: flex;
-    flex-direction: column;
+    color: #1e293b;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
 }
 
+.category-chip:hover {
+    border-color: var(--primary);
+    background: #f0fdf4;
+}
+
+.category-chip.active {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* Product Cards with Images - Responsive Auto-Fill */
 .pos-products-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
     overflow-y: auto;
     flex: 1;
-    padding-top: 4px;
+    padding: 2px;
+    align-content: start;
 }
 
 .pos-product-card {
-    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    background: #fff;
+    border-radius: 8px;
+    background: #ffffff;
     cursor: pointer;
-    transition: transform 0.1s, border-color 0.1s;
+    overflow: hidden;
+    transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .pos-product-card:hover {
     border-color: var(--primary);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
-.pos-checkout-sidebar {
+.pos-product-card.out-of-stock {
+    opacity: 0.55;
+    background: #fef2f2;
+}
+
+.product-card-img-box {
+    width: 100%;
+    height: 95px;
     background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 14px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    height: 100%;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 6px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.product-card-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.product-card-placeholder {
+    font-size: 26px;
+    color: #94a3b8;
+    font-weight: 800;
+}
+
+.product-card-body {
+    padding: 7px 8px;
+}
+
+.product-card-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.product-card-footer {
+    display: flex;
     justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+}
+
+.product-card-price {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--primary);
 }
 
 .cart-qty-btn {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     border-radius: 4px;
     background: #f1f5f9;
     border: 1px solid #cbd5e1;
     font-weight: 700;
     cursor: pointer;
 }
+
+.fullscreen-toggle-btn {
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.fullscreen-toggle-btn:hover {
+    background: #334155;
+}
+
+@media (max-width: 960px) {
+    .pos-layout-grid,
+    body.pos-fullscreen-mode .pos-layout-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
 </style>
 
 <?php if ($completedSaleInfo): ?>
-    <div class="card" style="border-left: 4px solid var(--success); background: #f0fdf4; margin-bottom: 16px;">
-        <div class="card-body" style="padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="badge badge-success" style="font-size: 12px;">✓ Sale Completed</span>
+    <div class="card" style="border-left: 4px solid var(--success); background: #f0fdf4; margin-bottom: 8px; position: relative; z-index: 100000;">
+        <div class="card-body" style="padding: 6px 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px;">
+                <span class="badge badge-success">✓ Sale Completed</span>
                 <span>Invoice: <strong><?= e($completedSaleInfo['invoice']) ?></strong> · Total: <strong>Rs <?= money($completedSaleInfo['amount']) ?></strong> (<?= e($completedSaleInfo['mode']) ?>)</span>
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 6px;">
                 <button type="button" class="btn btn-primary btn-sm" onclick="printReceipt('<?= e($completedSaleInfo['invoice']) ?>')">
-                    🖨️ Print Bill Now
+                    🖨️ Print Bill
                 </button>
                 <button type="button" class="btn btn-light btn-sm" onclick="this.closest('.card').remove()">
                     Dismiss
@@ -369,123 +601,59 @@ body {
     </div>
 <?php endif; ?>
 
-<form method="post" id="checkoutForm" onsubmit="return validateCheckout()">
+<form method="post" id="checkoutForm" onsubmit="return validateCheckout()" style="height: 100%;">
     <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
     <input type="hidden" name="action" value="checkout">
     <input type="hidden" name="items" id="itemsPayload">
     <input type="hidden" name="payment_mode" id="selectedPaymentMode" value="Cash">
 
     <div class="pos-layout-grid">
-        <!-- LEFT MAIN COLUMN -->
-        <div class="pos-left-column">
-            <!-- 1. Search Box with Live Dropdown & Category Bar -->
-            <div class="card" style="padding: 14px 16px; margin-bottom: 0;">
-                <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <div class="search-dropdown-wrapper">
-                        <div class="search-box">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                            <input type="text" id="posProductSearch" placeholder="Search product name or scan barcode..." autofocus autocomplete="off" onkeydown="handleSearchKey(event)" oninput="filterSearchDropdown()">
-                        </div>
-                        <div id="searchResultsDropdown" class="search-results-dropdown"></div>
-                    </div>
-
-                    <button type="button" class="btn btn-light btn-sm" onclick="clearSearch()">Clear</button>
+        <!-- 1. LEFT COLUMN: BILL TABLE (TOP) + CHECKOUT SUMMARY (BOTTOM) -->
+        <div class="pos-left-bill-wrapper">
+            <div class="pos-bill-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <button type="button" id="fullScreenToggleBtn" class="fullscreen-toggle-btn" onclick="togglePosFullScreen()" title="Hide/Show Sidebar & Full Screen">
+                        ⛶ Full Screen
+                    </button>
+                    <h3 style="font-size: 13.5px; font-weight: 800; margin: 0; color: #0f172a;">🧾 Bill</h3>
+                    <span class="badge badge-gray" id="cartItemCount">0</span>
+                </div>
+                <div style="display: flex; gap: 4px;">
                     <?php if ($latestInvoiceNumber): ?>
-                        <button type="button" class="btn btn-light btn-sm" onclick="printReceipt('<?= e($latestInvoiceNumber) ?>')">
-                            🖨️ Reprint Last
+                        <button type="button" class="btn btn-light btn-sm" onclick="printReceipt('<?= e($latestInvoiceNumber) ?>')" title="Reprint Last Invoice" style="padding: 4px 7px; font-size: 11px;">
+                            🖨️ Last
                         </button>
                     <?php endif; ?>
+                    <button type="button" class="btn btn-sm btn-light" onclick="clearCart()" style="color: #dc2626; font-weight: 700; padding: 4px 8px; font-size: 11px;">New Invoice</button>
                 </div>
             </div>
 
-            <!-- 2. Wide Cart Table -->
-            <div class="pos-cart-panel">
-                <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #fafafa;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <h3 style="font-size: 15px; font-weight: 800; margin: 0; color: #0f172a;">🛒 Current Order Items</h3>
-                        <span class="badge badge-gray" id="cartItemCount">0 items</span>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-light" onclick="clearCart()" style="color: #dc2626;">Clear Order Cart</button>
-                </div>
-
-                <div class="pos-cart-table-wrapper">
-                    <table class="pos-cart-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 35%;">Item Name</th>
-                                <th style="width: 25%;">Quantity / Weight</th>
-                                <th style="width: 15%; text-align: right;">Unit Rate (Rs)</th>
-                                <th style="width: 15%; text-align: right;">Total (Rs)</th>
-                                <th style="width: 10%; text-align: center;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cartItemsContainer">
-                            <tr>
-                                <td colspan="5" class="text-center text-muted" style="padding: 30px;">
-                                    Cart is empty. Type above or click products below to add.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="pos-cart-table-wrapper">
+                <table class="pos-cart-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 34%;">Description</th>
+                            <th style="width: 28%;">Qty / Wt</th>
+                            <th style="width: 15%; text-align: right;">Rate</th>
+                            <th style="width: 15%; text-align: right;">Total</th>
+                            <th style="width: 8%; text-align: center;">×</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cartItemsContainer">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted" style="padding: 35px 12px; font-size: 12.5px;">
+                                Cart is empty. Select category & click products on the right.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
-            <!-- 3. Product Quick Selection Grid -->
-            <div class="pos-catalog-panel">
-                <div style="font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 6px;">
-                    Quick Click Product Items
-                </div>
-                <div class="pos-products-grid" id="posProductsGrid">
-                    <?php foreach ($products as $p): 
-                        $isOut = (float)$p['stock_quantity'] <= 0;
-                        $isKg = ($p['unit'] ?? 'piece') === 'kg';
-                        if ($isKg) {
-                            $stockText = rtrim(rtrim(number_format((float)$p['stock_quantity'], 3, '.', ''), '0'), '.') . ' kg';
-                        } else {
-                            $stockText = (int)$p['stock_quantity'] . ' Left';
-                        }
-                    ?>
-                        <div class="pos-product-card <?= $isOut ? 'out-of-stock' : '' ?>"
-                             data-id="<?= $p['id'] ?>"
-                             data-name="<?= e(strtolower($p['name'])) ?>"
-                             data-barcode="<?= e(strtolower($p['barcode'] ?? '')) ?>"
-                             data-category="<?= e(strtolower($p['category_name'] ?? '')) ?>"
-                             onclick="addToCart(<?= htmlspecialchars(json_encode([
-                                 'id' => (int) $p['id'],
-                                 'name' => $p['name'],
-                                 'price' => (float) $p['market_sale_price'],
-                                 'stock' => (float) $p['stock_quantity'],
-                                 'unit' => $p['unit'] ?? 'piece',
-                                 'barcode' => $p['barcode'] ?? '',
-                                 'expiry_date' => $p['expiry_date'] ?? '',
-                                 'days_until_expiry' => $p['days_until_expiry'] ?? null
-                             ]), ENT_QUOTES, 'UTF-8') ?>)">
-                            
-                            <div style="font-size: 12.5px; font-weight: 700; color: #0f172a; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                <?= e($p['name']) ?>
-                            </div>
-                            <div class="product-card-footer">
-                                <div class="product-card-price">Rs <?= money($p['market_sale_price']) ?></div>
-                                <span class="badge <?= $isOut ? 'badge-danger' : 'badge-success' ?>"><?= $stockText ?></span>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-
-        <!-- RIGHT CHECKOUT SIDEBAR -->
-        <div class="pos-checkout-sidebar">
-            <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                Checkout Summary
-            </h3>
-
-            <!-- Udhar & Customer Details -->
-            <div style="margin-bottom: 12px;">
-                <div id="udharCustomerSection" style="display: none; margin-bottom: 8px;">
-                    <label style="font-size: 11px; font-weight: 700; color: #b45309;">Select Udhar Customer *</label>
-                    <select name="udhar_customer_id" id="udharCustomerSelect" class="form-control" onchange="onUdharCustomerSelected(this.value)" style="font-size: 12px; padding: 5px 8px;">
-                        <option value="">-- Select Udhar Customer --</option>
+            <!-- Bottom Checkout Summary -->
+            <div class="pos-checkout-bottom">
+                <div id="udharCustomerSection" style="display: none; margin-bottom: 6px;">
+                    <select name="udhar_customer_id" id="udharCustomerSelect" class="form-control" onchange="onUdharCustomerSelected(this.value)" style="font-size: 11.5px; padding: 4px 8px;">
+                        <option value="">-- Select Udhar Customer * --</option>
                         <?php foreach ($udharCustomers as $uc): ?>
                             <option value="<?= $uc['id'] ?>" data-name="<?= e($uc['name']) ?>" data-phone="<?= e($uc['phone'] ?? '') ?>">
                                 <?= e($uc['name']) ?> (Left: Rs <?= money($uc['remaining_limit']) ?>)
@@ -494,69 +662,130 @@ body {
                     </select>
                 </div>
 
-                <div style="margin-bottom: 6px;">
-                    <label style="font-size: 11px; font-weight: 600;">Customer Name</label>
-                    <input type="text" name="buyer_name" id="buyerNameInput" class="form-control" placeholder="Walk-in Customer" style="padding: 5px 8px; font-size: 12px;" onkeydown="preventInputSubmit(event)">
-                </div>
-                <div>
-                    <label style="font-size: 11px; font-weight: 600;">Phone Number</label>
-                    <input type="text" name="buyer_phone" id="buyerPhoneInput" class="form-control" placeholder="0300-XXXXXXX" style="padding: 5px 8px; font-size: 12px;" onkeydown="preventInputSubmit(event)">
-                </div>
-            </div>
-
-            <!-- Bill Calculations -->
-            <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
-                    <span>Subtotal:</span>
-                    <strong id="subtotalDisplay">Rs 0.00</strong>
+                <div class="checkout-customer-row">
+                    <input type="text" name="buyer_name" id="buyerNameInput" class="form-control" placeholder="Customer Name (Walk-in)" style="padding: 4px 8px; font-size: 11.5px;" onkeydown="preventInputSubmit(event)">
+                    <input type="text" name="buyer_phone" id="buyerPhoneInput" class="form-control" placeholder="Phone: 0300-XXXXXXX" style="padding: 4px 8px; font-size: 11.5px;" onkeydown="preventInputSubmit(event)">
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 13px;">Discount / Bonus:</span>
-                    <div style="display: flex; align-items: center; gap: 4px;">
-                        <span style="font-size: 11px; color: #64748b;">Rs</span>
-                        <input type="number" step="0.01" name="bonus_discount" id="discountInput" value="0" class="form-control" style="width: 80px; padding: 3px 6px; text-align: right; font-weight: 700;" onkeydown="preventInputSubmit(event)" oninput="updateCartTotalsOnly()">
+                <div class="checkout-summary-box">
+                    <div class="summary-line">
+                        <span style="color: #475569; font-weight: 600;">Sub Total:</span>
+                        <strong id="subtotalDisplay" style="font-size: 13px;">Rs 0.00</strong>
+                    </div>
+                    <div class="summary-line" style="margin-bottom: 0;">
+                        <span style="color: #475569; font-weight: 600;">Discount (Rs):</span>
+                        <input type="number" step="0.01" name="bonus_discount" id="discountInput" value="0" class="form-control" style="width: 85px; padding: 2px 6px; text-align: right; font-weight: 700; font-size: 12px;" onkeydown="preventInputSubmit(event)" oninput="updateCartTotalsOnly()">
+                    </div>
+                    <div class="net-payable-bar">
+                        <span style="font-size: 12.5px; font-weight: 800; letter-spacing: 0.3px;">NET PAYABLE</span>
+                        <span id="netPayableDisplay" style="font-size: 17px; font-weight: 900;">Rs 0.00</span>
                     </div>
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
-                    <span style="font-size: 13px; font-weight: 800; color: #0f172a;">NET PAYABLE:</span>
-                    <span id="netPayableDisplay" style="color: var(--primary); font-size: 19px; font-weight: 800;">Rs 0.00</span>
+                <div class="checkout-payment-row">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px;">
+                        <button type="button" class="payment-mode-btn active" data-mode="Cash" onclick="selectPaymentMode('Cash')" style="padding: 5px 2px; font-size: 11px;">💵 Cash</button>
+                        <button type="button" class="payment-mode-btn" data-mode="Bank" onclick="selectPaymentMode('Bank')" style="padding: 5px 2px; font-size: 11px;">💳 Bank</button>
+                        <button type="button" class="payment-mode-btn" data-mode="Udhar" onclick="selectPaymentMode('Udhar')" style="padding: 5px 2px; font-size: 11px;">📒 Udhar</button>
+                    </div>
+
+                    <div id="cashCalculatorBox" style="display: flex; align-items: center; gap: 5px;">
+                        <input type="number" step="0.01" name="paid_amount" id="cashTendered" class="form-control" placeholder="Cash Recv" style="padding: 4px 6px; font-weight: 700; font-size: 12px; width: 52%;" onkeydown="preventInputSubmit(event)" oninput="calcChange()">
+                        <div style="font-size: 11px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 4px 6px; border-radius: 5px; width: 48%; text-align: right; white-space: nowrap; overflow: hidden;">
+                            Ret: <span id="changeDisplay">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="checkout-action-row">
+                    <label for="autoPrintCheck" style="margin: 0; font-size: 11.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        <input type="checkbox" name="autoprint" id="autoPrintCheck" value="1" checked style="width: auto; margin: 0;">
+                        🖨️ Auto-print
+                    </label>
+                    <button type="submit" class="btn btn-success" id="checkoutBtn" disabled style="padding: 9px 14px; font-size: 13px; font-weight: 800; flex: 1;">
+                        ✓ Complete Sale & Print
+                    </button>
                 </div>
             </div>
+        </div>
 
-            <!-- Payment Method Selector -->
-            <div style="margin-bottom: 12px;">
-                <label style="font-size: 11px; font-weight: 600; margin-bottom: 4px; display: block;">Payment Mode:</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
-                    <button type="button" class="payment-mode-btn active" data-mode="Cash" onclick="selectPaymentMode('Cash')" style="padding: 6px; font-size: 11px;">💵 Cash</button>
-                    <button type="button" class="payment-mode-btn" data-mode="Bank" onclick="selectPaymentMode('Bank')" style="padding: 6px; font-size: 11px;">💳 Bank</button>
-                    <button type="button" class="payment-mode-btn" data-mode="Udhar" onclick="selectPaymentMode('Udhar')" style="padding: 6px; font-size: 11px;">📒 Udhar</button>
+        <!-- 2. RIGHT COLUMN: SEARCH + CATEGORIES + PRODUCT IMAGES GRID -->
+        <div class="pos-catalog-column">
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <div class="search-dropdown-wrapper">
+                    <div class="search-box" style="margin: 0;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="posProductSearch" placeholder="Search item name or scan barcode..." autofocus autocomplete="off" onkeydown="handleSearchKey(event)" oninput="filterSearchDropdown()">
+                    </div>
+                    <div id="searchResultsDropdown" class="search-results-dropdown"></div>
                 </div>
+                <button type="button" class="btn btn-light btn-sm" onclick="clearSearch()">Reset</button>
             </div>
 
-            <!-- Cash Return Calculation -->
-            <div id="cashCalculatorBox" style="margin-bottom: 12px;">
-                <div style="margin-bottom: 6px;">
-                    <label style="font-size: 11px; font-weight: 600;">Cash Received (Rs):</label>
-                    <input type="number" step="0.01" name="paid_amount" id="cashTendered" class="form-control" placeholder="0.00" style="padding: 6px 8px; font-weight: 700; font-size: 13px;" onkeydown="preventInputSubmit(event)" oninput="calcChange()">
-                </div>
-                <div style="padding: 8px 10px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 11.5px; font-weight: 700; color: #065f46;">Change Return:</span>
-                    <span id="changeDisplay" style="font-size: 14px; font-weight: 800; color: #047857;">Rs 0.00</span>
-                </div>
+            <div class="pos-categories-bar">
+                <button type="button" class="category-chip active" data-cat="" onclick="filterCategory(this, '')">
+                    All Items
+                </button>
+                <?php foreach ($categories as $cat): ?>
+                    <button type="button" class="category-chip" data-cat="<?= e(strtolower($cat['name'])) ?>" onclick="filterCategory(this, '<?= e($cat['name']) ?>')">
+                        <?= e($cat['name']) ?>
+                    </button>
+                <?php endforeach; ?>
             </div>
 
-            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-                <input type="checkbox" name="autoprint" id="autoPrintCheck" value="1" checked style="width: auto;">
-                <label for="autoPrintCheck" style="margin: 0; font-size: 11.5px; font-weight: 600; cursor: pointer;">
-                    🖨️ Auto-print receipt
-                </label>
-            </div>
+            <div class="pos-products-grid" id="posProductsGrid">
+                <?php foreach ($products as $p): 
+                    $isOut = (float)$p['stock_quantity'] <= 0;
+                    $isKg = ($p['unit'] ?? 'piece') === 'kg';
+                    if ($isKg) {
+                        $stockText = rtrim(rtrim(number_format((float)$p['stock_quantity'], 3, '.', ''), '0'), '.') . ' kg';
+                    } else {
+                        $stockText = (int)$p['stock_quantity'] . ' PCS';
+                    }
 
-            <button type="submit" class="btn btn-success btn-block" id="checkoutBtn" disabled style="padding: 11px; font-size: 14px; font-weight: 800;">
-                ✓ Complete Sale & Print
-            </button>
+                    $imgSrc = '';
+                    if (!empty($p['image'])) {
+                        $imgSrc = preg_match('/^https?:\/\//i', $p['image']) ? $p['image'] : url('/' . ltrim($p['image'], '/'));
+                    }
+                    $firstLetter = mb_strtoupper(mb_substr(trim($p['name']), 0, 1));
+                ?>
+                    <div class="pos-product-card <?= $isOut ? 'out-of-stock' : '' ?>"
+                         data-id="<?= $p['id'] ?>"
+                         data-name="<?= e(strtolower($p['name'])) ?>"
+                         data-barcode="<?= e(strtolower($p['barcode'] ?? '')) ?>"
+                         data-category="<?= e(strtolower($p['category_name'] ?? '')) ?>"
+                         onclick="addToCart(<?= htmlspecialchars(json_encode([
+                             'id' => (int) $p['id'],
+                             'name' => $p['name'],
+                             'price' => (float) $p['market_sale_price'],
+                             'stock' => (float) $p['stock_quantity'],
+                             'unit' => $p['unit'] ?? 'piece',
+                             'barcode' => $p['barcode'] ?? '',
+                             'expiry_date' => $p['expiry_date'] ?? '',
+                             'days_until_expiry' => $p['days_until_expiry'] ?? null
+                         ]), ENT_QUOTES, 'UTF-8') ?>)">
+
+                        <div class="product-card-img-box">
+                            <?php if ($imgSrc !== ''): ?>
+                                <img src="<?= e($imgSrc) ?>" alt="<?= e($p['name']) ?>" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <span class="product-card-placeholder" style="display:none;"><?= e($firstLetter) ?></span>
+                            <?php else: ?>
+                                <span class="product-card-placeholder"><?= e($firstLetter) ?></span>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="product-card-body">
+                            <div class="product-card-title" title="<?= e($p['name']) ?>">
+                                <?= e($p['name']) ?>
+                            </div>
+                            <div class="product-card-footer">
+                                <div class="product-card-price">Rs <?= money($p['market_sale_price']) ?></div>
+                                <span class="badge <?= $isOut ? 'badge-danger' : 'badge-success' ?>" style="font-size: 9.5px; padding: 2px 5px;"><?= $stockText ?></span>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
 </form>
@@ -568,6 +797,52 @@ const udharCustomers = <?= json_encode($udharCustomers) ?>;
 
 let cart = [];
 let activeCategory = '';
+
+/* Responsive Full Screen & Sidebar Toggle */
+function applySidebarVisibility(isFull) {
+    const btn = document.getElementById('fullScreenToggleBtn');
+    const sidebars = document.querySelectorAll('aside, .sidebar, .app-sidebar, .left-sidebar, nav.sidebar');
+    const headers = document.querySelectorAll('header, .topbar, .top-header');
+
+    if (isFull) {
+        document.body.classList.add('pos-fullscreen-mode');
+        sidebars.forEach(el => el.style.setProperty('display', 'none', 'important'));
+        headers.forEach(el => el.style.setProperty('display', 'none', 'important'));
+        if (btn) btn.innerHTML = '↙ Show Sidebar';
+    } else {
+        document.body.classList.remove('pos-fullscreen-mode');
+        sidebars.forEach(el => el.style.removeProperty('display'));
+        headers.forEach(el => el.style.removeProperty('display'));
+        if (btn) btn.innerHTML = '⛶ Full Screen';
+    }
+    window.dispatchEvent(new Event('resize'));
+}
+
+function togglePosFullScreen() {
+    const isFull = !document.body.classList.contains('pos-fullscreen-mode');
+    applySidebarVisibility(isFull);
+    localStorage.setItem('pos_fullscreen', isFull ? '1' : '0');
+
+    if (isFull) {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
+    } else {
+        if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+        }
+    }
+}
+
+document.addEventListener('fullscreenchange', () => {
+    window.dispatchEvent(new Event('resize'));
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('pos_fullscreen') === '1') {
+        applySidebarVisibility(true);
+    }
+});
 
 function preventInputSubmit(e) {
     if (e.key === 'Enter') {
@@ -585,7 +860,6 @@ function printReceipt(invNum) {
     window.open('<?= url('/print_invoice.php') ?>?invoice=' + encodeURIComponent(invNum) + '&autoprint=1', '_blank', 'width=420,height=650');
 }
 
-/* Add to Cart Handler */
 function addToCart(prod) {
     const isSuper = (userRole === 'Admin' || userRole === 'Master');
     if (prod.days_until_expiry !== null && prod.days_until_expiry < 0) {
@@ -663,8 +937,12 @@ function addToCart(prod) {
             });
         }
     }
-    
-    clearSearch();
+
+    const searchInput = document.getElementById('posProductSearch');
+    if (searchInput) searchInput.value = '';
+    document.getElementById('searchResultsDropdown').style.display = 'none';
+    filterProducts();
+
     renderCart();
 }
 
@@ -824,20 +1102,19 @@ function updateCartTotalsOnly() {
     calcChange();
 }
 
-/* Render Cart Items Table */
 function renderCart() {
     const container = document.getElementById('cartItemsContainer');
     const itemCountSpan = document.getElementById('cartItemCount');
     const checkoutBtn = document.getElementById('checkoutBtn');
 
     const totalItems = cart.length;
-    itemCountSpan.textContent = totalItems + (totalItems === 1 ? ' item' : ' items');
+    itemCountSpan.textContent = totalItems;
 
     if (cart.length === 0) {
         container.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center text-muted" style="padding: 30px;">
-                    Cart is empty. Type product name above or scan barcode.
+                <td colspan="5" class="text-center text-muted" style="padding: 35px 12px; font-size: 12.5px;">
+                    Cart is empty. Select category & click products on the right.
                 </td>
             </tr>
         `;
@@ -850,25 +1127,24 @@ function renderCart() {
                 return `
                 <tr style="background: #f0f9ff;">
                     <td>
-                        <strong style="font-size:13px; color:#0369a1;">${item.name}</strong> 
-                        <span class="badge" style="background:#0284c7; color:#fff; font-size:9.5px;">⚖️ KG</span>
+                        <strong style="font-size:12.5px; color:#0369a1;">${item.name}</strong> 
+                        <span class="badge" style="background:#0284c7; color:#fff; font-size:9px;">KG</span>
                     </td>
                     <td>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <label style="font-size:11px; margin:0; font-weight:600;">Grams:</label>
-                            <input type="number" id="kgGrams_${item.id}" value="${item.grams}" onkeydown="preventInputSubmit(event)" oninput="onKgGramsChange(${item.id}, this.value)" style="width:70px; padding:3px; font-size:12px; font-weight:700; border:1px solid #93c5fd; border-radius:4px; text-align:center;">
-                            <label style="font-size:11px; margin:0; font-weight:600;">Rs:</label>
-                            <input type="number" id="kgAmount_${item.id}" value="${Number(item.amount || 0).toFixed(2)}" onkeydown="preventInputSubmit(event)" oninput="onKgAmountChange(${item.id}, this.value)" style="width:80px; padding:3px; font-size:12px; font-weight:700; border:1px solid #93c5fd; border-radius:4px; text-align:right;">
+                        <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
+                            <input type="number" id="kgGrams_${item.id}" value="${item.grams}" title="Grams" onkeydown="preventInputSubmit(event)" oninput="onKgGramsChange(${item.id}, this.value)" style="width:52px; padding:2px; font-size:11.5px; font-weight:700; border:1px solid #93c5fd; border-radius:4px; text-align:center;">
+                            <span style="font-size:10px;">g</span>
+                            <input type="number" id="kgAmount_${item.id}" value="${Number(item.amount || 0).toFixed(2)}" title="Amount Rs" onkeydown="preventInputSubmit(event)" oninput="onKgAmountChange(${item.id}, this.value)" style="width:60px; padding:2px; font-size:11.5px; font-weight:700; border:1px solid #93c5fd; border-radius:4px; text-align:right;">
                         </div>
                     </td>
                     <td style="text-align: right;">
-                        <input type="number" value="${item.price}" onkeydown="preventInputSubmit(event)" onchange="updateItemPrice(${item.id}, this.value)" style="width:65px; padding:3px; font-size:12px; font-weight:700; border:1px solid #93c5fd; border-radius:4px; text-align:right;">
+                        <input type="number" value="${item.price}" onkeydown="preventInputSubmit(event)" onchange="updateItemPrice(${item.id}, this.value)" style="width:54px; padding:2px; font-size:11.5px; font-weight:700; border:1px solid #93c5fd; border-radius:4px; text-align:right;">
                     </td>
                     <td style="text-align: right;">
-                        <strong id="itemLineTotal_${item.id}" style="font-size:14px; color:#0284c7;">${formatMoney(item.amount)}</strong>
+                        <strong id="itemLineTotal_${item.id}" style="font-size:12.5px; color:#0284c7;">${formatMoney(item.amount)}</strong>
                     </td>
                     <td style="text-align: center;">
-                        <button type="button" onclick="removeFromCart(${item.id})" style="color:#ef4444; background:none; border:none; cursor:pointer; font-size:18px; font-weight:bold;">&times;</button>
+                        <button type="button" onclick="removeFromCart(${item.id})" style="color:#ef4444; background:none; border:none; cursor:pointer; font-size:17px; font-weight:bold;">&times;</button>
                     </td>
                 </tr>
                 `;
@@ -876,23 +1152,23 @@ function renderCart() {
                 return `
                 <tr>
                     <td>
-                        <strong style="font-size:13px; color:#0f172a;">${item.name}</strong>
+                        <strong style="font-size:12.5px; color:#0f172a;">${item.name}</strong>
                     </td>
                     <td>
-                        <div style="display:flex; align-items:center; gap:4px;">
+                        <div style="display:flex; align-items:center; gap:3px;">
                             <button type="button" class="cart-qty-btn" onclick="updateQty(${item.id}, -1)">&minus;</button>
-                            <input type="number" value="${item.qty}" min="1" max="${item.stock}" onkeydown="preventInputSubmit(event)" onchange="setQty(${item.id}, this.value)" style="width:45px; padding:3px; text-align:center; font-size:12px; font-weight:700; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="number" value="${item.qty}" min="1" max="${item.stock}" onkeydown="preventInputSubmit(event)" onchange="setQty(${item.id}, this.value)" style="width:38px; padding:2px; text-align:center; font-size:11.5px; font-weight:700; border:1px solid #cbd5e1; border-radius:4px;">
                             <button type="button" class="cart-qty-btn" onclick="updateQty(${item.id}, 1)">&#43;</button>
                         </div>
                     </td>
                     <td style="text-align: right;">
-                        <input type="number" value="${item.price}" onkeydown="preventInputSubmit(event)" onchange="updateItemPrice(${item.id}, this.value)" style="width:65px; padding:3px; font-size:12px; font-weight:700; border:1px solid #cbd5e1; border-radius:4px; text-align:right;">
+                        <input type="number" value="${item.price}" onkeydown="preventInputSubmit(event)" onchange="updateItemPrice(${item.id}, this.value)" style="width:54px; padding:2px; font-size:11.5px; font-weight:700; border:1px solid #cbd5e1; border-radius:4px; text-align:right;">
                     </td>
                     <td style="text-align: right;">
-                        <strong id="itemLineTotal_${item.id}" style="font-size:14px; color:#0f172a;">${formatMoney(item.price * item.qty)}</strong>
+                        <strong id="itemLineTotal_${item.id}" style="font-size:12.5px; color:#0f172a;">${formatMoney(item.price * item.qty)}</strong>
                     </td>
                     <td style="text-align: center;">
-                        <button type="button" onclick="removeFromCart(${item.id})" style="color:#ef4444; background:none; border:none; cursor:pointer; font-size:18px; font-weight:bold;">&times;</button>
+                        <button type="button" onclick="removeFromCart(${item.id})" style="color:#ef4444; background:none; border:none; cursor:pointer; font-size:17px; font-weight:bold;">&times;</button>
                     </td>
                 </tr>
                 `;
@@ -904,7 +1180,6 @@ function renderCart() {
     updateCartTotalsOnly();
 }
 
-/* Instant Search Dropdown & Direct Barcode Scanning Logic */
 function filterSearchDropdown() {
     const query = (document.getElementById('posProductSearch').value || '').trim().toLowerCase();
     const dropdown = document.getElementById('searchResultsDropdown');
@@ -943,20 +1218,17 @@ function filterSearchDropdown() {
     filterProducts();
 }
 
-/* Perfect Barcode Scanner Handler (Runs on Enter Key press from barcode scanner) */
 function handleSearchKey(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         const query = (document.getElementById('posProductSearch').value || '').trim().toLowerCase();
 
         if (query !== '') {
-            // 1. Direct exact barcode match search
             const exactBarcodeMatch = productsList.find(p => (p.barcode || '').trim().toLowerCase() === query);
 
             if (exactBarcodeMatch) {
                 addToCart(exactBarcodeMatch);
             } else {
-                // 2. Dropdown first item fallback search
                 const dropdown = document.getElementById('searchResultsDropdown');
                 const firstItem = dropdown.querySelector('.search-dropdown-item');
                 if (firstItem) {
@@ -978,7 +1250,7 @@ function selectPaymentMode(mode) {
     const udharSection = document.getElementById('udharCustomerSection');
 
     if (mode === 'Cash') {
-        cashBox.style.display = 'block';
+        cashBox.style.display = 'flex';
         udharSection.style.display = 'none';
     } else if (mode === 'Udhar') {
         cashBox.style.display = 'none';
@@ -1015,7 +1287,7 @@ function calcChange() {
     const tendered = parseFloat(tenderedInput.value) || 0;
     const change = Math.max(0, tendered - net);
 
-    document.getElementById('changeDisplay').textContent = formatMoney(change);
+    document.getElementById('changeDisplay').textContent = change.toLocaleString('en-US', {maximumFractionDigits: 2});
 }
 
 function clearSearch() {

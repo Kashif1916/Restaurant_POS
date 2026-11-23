@@ -5,6 +5,51 @@ require_login('Admin');
 $pdo = db();
 $page_title = 'Products & Inventory Management';
 
+/**
+ * Helper to upload product image into /uploads/products/
+ */
+function handle_product_image_upload(string $fieldName = 'product_image', ?string $oldImage = null): ?string
+{
+    if (!isset($_FILES[$fieldName]) || $_FILES[$fieldName]['error'] === UPLOAD_ERR_NO_FILE) {
+        return $oldImage;
+    }
+
+    if ($_FILES[$fieldName]['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Image upload failed with error code: ' . $_FILES[$fieldName]['error']);
+    }
+
+    $tmpName = $_FILES[$fieldName]['tmp_name'];
+    $origName = $_FILES[$fieldName]['name'];
+    $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+    $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+    if (!in_array($ext, $allowed, true)) {
+        throw new RuntimeException('Invalid image format. Only JPG, PNG, WEBP, or GIF allowed.');
+    }
+
+    $uploadDir = __DIR__ . '/../uploads/products';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0775, true);
+    }
+
+    $fileName = 'prod_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $destPath = $uploadDir . '/' . $fileName;
+
+    if (!move_uploaded_file($tmpName, $destPath)) {
+        throw new RuntimeException('Failed to save uploaded product image.');
+    }
+
+    // Delete old local image if replaced
+    if ($oldImage && !preg_match('/^https?:\/\//i', $oldImage)) {
+        $oldFile = __DIR__ . '/../' . ltrim($oldImage, '/');
+        if (is_file($oldFile)) {
+            @unlink($oldFile);
+        }
+    }
+
+    return 'uploads/products/' . $fileName;
+}
+
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -31,16 +76,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $foundCat->execute([$newCategory]);
             $categoryId = (int) $foundCat->fetchColumn();
 
-            // Auto-detect kilogram from category name
             if (stripos($newCategory, 'kilo') !== false || stripos($newCategory, 'kg') !== false) {
                 $unit = 'kg';
             }
         }
 
         if ($name && $sale >= 0) {
-            $stmt = $pdo->prepare("INSERT INTO products (name, category_id, barcode, manufacturer_price, market_sale_price, dealer_id, stock_quantity, min_alert_limit, unit, expiry_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$name, $categoryId, $barcode ?: null, $cost, $sale, $dealerId, $stock, $minAlert, $unit, $expiryDate]);
-            flash('success', "Product '$name' added successfully!");
+            try {
+                $imagePath = handle_product_image_upload('product_image', null);
+                $stmt = $pdo->prepare("INSERT INTO products (name, category_id, barcode, image, manufacturer_price, market_sale_price, dealer_id, stock_quantity, min_alert_limit, unit, expiry_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $categoryId, $barcode ?: null, $imagePath, $cost, $sale, $dealerId, $stock, $minAlert, $unit, $expiryDate]);
+                flash('success', "Product '$name' added successfully!");
+            } catch (Throwable $e) {
+                flash('error', $e->getMessage());
+            }
         } else {
             flash('error', 'Product name and valid sale price are required.');
         }
@@ -56,11 +105,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dealerId = post_int('dealer_id') ?: null;
         $unit = post_string('unit', 'piece');
         $expiryDate = post_string('expiry_date') ?: null;
+        $removeImage = isset($_POST['remove_image']) && $_POST['remove_image'] === '1';
 
         if ($id && $name && $sale >= 0) {
-            $stmt = $pdo->prepare("UPDATE products SET name = ?, category_id = ?, barcode = ?, manufacturer_price = ?, market_sale_price = ?, dealer_id = ?, stock_quantity = ?, min_alert_limit = ?, unit = ?, expiry_date = ? WHERE id = ?");
-            $stmt->execute([$name, $categoryId, $barcode ?: null, $cost, $sale, $dealerId, $stock, $minAlert, $unit, $expiryDate, $id]);
-            flash('success', "Product '$name' updated successfully!");
+            try {
+                $oldStmt = $pdo->prepare("SELECT image FROM products WHERE id = ?");
+                $oldStmt->execute([$id]);
+                $oldImage = $oldStmt->fetchColumn() ?: null;
+
+                if ($removeImage && $oldImage) {
+                    if (!preg_match('/^https?:\/\//i', $oldImage)) {
+                        $oldFile = __DIR__ . '/../' . ltrim($oldImage, '/');
+                        if (is_file($oldFile)) @unlink($oldFile);
+                    }
+                    $oldImage = null;
+                }
+
+                $imagePath = handle_product_image_upload('product_image', $oldImage);
+
+                $stmt = $pdo->prepare("UPDATE products SET name = ?, category_id = ?, barcode = ?, image = ?, manufacturer_price = ?, market_sale_price = ?, dealer_id = ?, stock_quantity = ?, min_alert_limit = ?, unit = ?, expiry_date = ? WHERE id = ?");
+                $stmt->execute([$name, $categoryId, $barcode ?: null, $imagePath, $cost, $sale, $dealerId, $stock, $minAlert, $unit, $expiryDate, $id]);
+                flash('success', "Product '$name' updated successfully!");
+            } catch (Throwable $e) {
+                flash('error', $e->getMessage());
+            }
         } else {
             flash('error', 'Valid product details required for updating.');
         }
@@ -82,11 +150,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'delete') {
         $id = post_int('id');
         if ($id) {
-            // Check if product has sales
-            $soldCount = (int) $pdo->prepare("SELECT COUNT(*) FROM sale_items WHERE product_id = ?")->execute([$id]) ? $pdo->query("SELECT COUNT(*) FROM sale_items WHERE product_id = $id")->fetchColumn() : 0;
+            $chkStmt = $pdo->prepare("SELECT COUNT(*) FROM sale_items WHERE product_id = ?");
+            $chkStmt->execute([$id]);
+            $soldCount = (int) $chkStmt->fetchColumn();
             if ($soldCount > 0) {
                 flash('error', 'Cannot delete this product because it has past sales history. You can set its stock to 0 instead.');
             } else {
+                $imgStmt = $pdo->prepare("SELECT image FROM products WHERE id = ?");
+                $imgStmt->execute([$id]);
+                $imgPath = $imgStmt->fetchColumn();
+                if ($imgPath && !preg_match('/^https?:\/\//i', $imgPath)) {
+                    $fullPath = __DIR__ . '/../' . ltrim($imgPath, '/');
+                    if (is_file($fullPath)) @unlink($fullPath);
+                }
+
                 $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
                 $stmt->execute([$id]);
                 flash('success', 'Product deleted permanently.');
@@ -131,7 +208,6 @@ foreach ($products as $p) {
     $totalItemsInStock += (float) $p['stock_quantity'];
 }
 
-// Edit product prefetch if requested via query
 $editProduct = null;
 if (isset($_GET['edit_id'])) {
     $eStmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
@@ -204,6 +280,7 @@ include __DIR__ . '/../includes/header.php';
             <table class="table">
                 <thead>
                     <tr>
+                        <th style="width: 56px;">Image</th>
                         <th>Product & Barcode</th>
                         <th>Category & Unit</th>
                         <th>Dealer / Supplier</th>
@@ -218,7 +295,7 @@ include __DIR__ . '/../includes/header.php';
                 <tbody>
                     <?php if (empty($products)): ?>
                         <tr>
-                            <td colspan="9" class="text-center text-muted" style="padding: 40px;">
+                            <td colspan="10" class="text-center text-muted" style="padding: 40px;">
                                 No products found. Click <strong>+ Add New Product</strong> above to add items to your inventory.
                             </td>
                         </tr>
@@ -231,8 +308,23 @@ include __DIR__ . '/../includes/header.php';
                             $isLow = $stockQty <= $minAlert;
                             $margin = (float) $p['market_sale_price'] - (float) $p['manufacturer_price'];
                             $stockText = $isKg ? (rtrim(rtrim(number_format($stockQty, 3), '0'), '.') . ' kg') : ($stockQty . ' pcs');
+
+                            $imgUrl = '';
+                            if (!empty($p['image'])) {
+                                $imgUrl = preg_match('/^https?:\/\//i', $p['image']) ? $p['image'] : url('/' . ltrim($p['image'], '/'));
+                            }
+                            $p['image_url'] = $imgUrl;
                         ?>
                             <tr data-product-row>
+                                <td>
+                                    <?php if ($imgUrl): ?>
+                                        <img src="<?= e($imgUrl) ?>" alt="<?= e($p['name']) ?>" style="width: 42px; height: 42px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                    <?php else: ?>
+                                        <div style="width: 42px; height: 42px; border-radius: 6px; background: #f1f5f9; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;">
+                                            <?= e(mb_strtoupper(mb_substr(trim($p['name']), 0, 1))) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <strong><?= e($p['name']) ?></strong>
                                     <?php if ($p['barcode']): ?>
@@ -293,19 +385,16 @@ include __DIR__ . '/../includes/header.php';
                                 </td>
                                 <td class="text-right">
                                     <div style="display: inline-flex; gap: 6px;">
-                                        <!-- Edit Button -->
                                         <button type="button" class="btn btn-sm btn-light" 
                                             onclick="openEditModal(<?= htmlspecialchars(json_encode($p), ENT_QUOTES, 'UTF-8') ?>)" title="Edit Product">
                                             Edit
                                         </button>
 
-                                        <!-- Quick Restock Button -->
                                         <button type="button" class="btn btn-sm btn-light"
                                             onclick="openRestockModal(<?= $p['id'] ?>, '<?= e(addslashes($p['name'])) ?>', '<?= $stockText ?>', '<?= $p['expiry_date'] ?? '' ?>', '<?= $p['unit'] ?? 'piece' ?>')" title="Add Stock Quantity & Expiry">
                                             + Stock
                                         </button>
 
-                                        <!-- Delete Form -->
                                         <form method="post" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete \'<?= e(addslashes($p['name'])) ?>\'?');">
                                             <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
                                             <input type="hidden" name="action" value="delete">
@@ -330,14 +419,22 @@ include __DIR__ . '/../includes/header.php';
             <h3>Add New Product</h3>
             <button type="button" class="modal-close" data-modal-close>&times;</button>
         </div>
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             <div class="modal-body">
                 <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
                 <input type="hidden" name="action" value="add">
 
-                <div class="form-group">
-                    <label>Product Name <span class="text-danger">*</span></label>
-                    <input type="text" name="name" class="form-control" placeholder="e.g. Basmati Rice / Chicken / Coca Cola" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Product Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Zinger Burger / Coca Cola" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Product Image (Optional)</label>
+                        <input type="file" name="product_image" class="form-control" accept="image/*" onchange="previewSelectedImage(this, 'add_img_preview')">
+                        <img id="add_img_preview" src="" alt="" style="display:none; width: 48px; height: 48px; object-fit: cover; border-radius: 6px; margin-top: 6px; border: 1px solid #cbd5e1;">
+                    </div>
                 </div>
 
                 <div class="form-row">
@@ -353,7 +450,7 @@ include __DIR__ . '/../includes/header.php';
 
                     <div class="form-group">
                         <label>Or Type New Category</label>
-                        <input type="text" name="new_category" id="add_new_category" class="form-control" placeholder="e.g. Kilogram / Meat / Fruits" oninput="checkCategoryTextForKg(this, 'add')">
+                        <input type="text" name="new_category" id="add_new_category" class="form-control" placeholder="e.g. Fast Food / Drinks / KG" oninput="checkCategoryTextForKg(this, 'add')">
                     </div>
                 </div>
 
@@ -433,15 +530,28 @@ include __DIR__ . '/../includes/header.php';
             <h3>Edit Product</h3>
             <button type="button" class="modal-close" data-modal-close>&times;</button>
         </div>
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             <div class="modal-body">
                 <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
                 <input type="hidden" name="action" value="edit">
                 <input type="hidden" name="id" id="edit_id" value="<?= $editProduct['id'] ?? '' ?>">
 
-                <div class="form-group">
-                    <label>Product Name <span class="text-danger">*</span></label>
-                    <input type="text" name="name" id="edit_name" class="form-control" value="<?= e($editProduct['name'] ?? '') ?>" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Product Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name" id="edit_name" class="form-control" value="<?= e($editProduct['name'] ?? '') ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Product Image (Change / Upload)</label>
+                        <input type="file" name="product_image" class="form-control" accept="image/*" onchange="previewSelectedImage(this, 'edit_img_preview')">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+                            <img id="edit_img_preview" src="" alt="" style="display:none; width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;">
+                            <label id="edit_remove_img_wrap" style="display:none; font-size: 11.5px; color: #dc2626; cursor: pointer; margin: 0;">
+                                <input type="checkbox" name="remove_image" id="edit_remove_image" value="1"> Remove Image
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-row">
@@ -556,10 +666,22 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <script>
+function previewSelectedImage(input, previewId) {
+    const img = document.getElementById(previewId);
+    if (!img) return;
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            img.src = e.target.result;
+            img.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
 function preventBarcodeEnter(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
-        // Scanner ne barcode daal diya, next field pe focus karo
         const inputs = Array.from(e.target.closest('form').querySelectorAll('input, select, button[type="submit"]'));
         const idx = inputs.indexOf(e.target);
         if (idx !== -1 && inputs[idx + 1]) {
@@ -627,6 +749,22 @@ function openEditModal(prod) {
     document.getElementById('edit_min_alert_limit').value = prod.min_alert_limit;
     document.getElementById('edit_unit').value = prod.unit || 'piece';
     document.getElementById('edit_expiry_date').value = prod.expiry_date || '';
+
+    const imgPreview = document.getElementById('edit_img_preview');
+    const removeWrap = document.getElementById('edit_remove_img_wrap');
+    const removeCheck = document.getElementById('edit_remove_image');
+    if (removeCheck) removeCheck.checked = false;
+
+    if (prod.image_url) {
+        imgPreview.src = prod.image_url;
+        imgPreview.style.display = 'block';
+        removeWrap.style.display = 'inline-flex';
+    } else {
+        imgPreview.src = '';
+        imgPreview.style.display = 'none';
+        removeWrap.style.display = 'none';
+    }
+
     syncUnitForm('edit');
     document.getElementById('editProductModal').classList.add('active');
 }
